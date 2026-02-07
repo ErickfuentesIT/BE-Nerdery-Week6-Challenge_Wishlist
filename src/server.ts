@@ -1,25 +1,29 @@
-import express, { Application, Request } from "express";
-import cors from "cors";
-import { ApolloServer, BaseContext } from "@apollo/server";
-import { typeDefs, resolvers } from "./resolvers/products.resolver";
+import express, { Application } from "express";
+import { ApolloServer } from "@apollo/server";
+import { expressMiddleware } from "@as-integrations/express5";
+import { typeDefs, resolvers } from "./resolvers/wishlist.resolver";
 import dotenv from "dotenv";
+import exportsRoutes from "./routes/exports.route";
 
 dotenv.config();
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
 
 async function start() {
   const app: Application = express();
-  app.use(cors());
 
   const server = new ApolloServer({
     typeDefs,
     resolvers,
   });
 
+  // EXPORT CSV ROUTE
+  app.use("/exports", exportsRoutes);
+ // GRAPHQL SINGLE EP
   await server.start();
-  app.use("/graphql", expressMiddleware(server));
+  app.use("/graphql", express.json(), expressMiddleware(server));
 
   app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
     console.log(`GraphQL endpoint: http://localhost:${PORT}/graphql`);
   });
 }
@@ -28,14 +32,3 @@ start().catch((e) => {
   console.error(e);
   process.exit(1);
 });
-function expressMiddleware(
-  server: ApolloServer<BaseContext>,
-): import("express-serve-static-core").RequestHandler<
-  {},
-  any,
-  any,
-  import("qs").ParsedQs,
-  Record<string, any>
-> {
-  throw new Error("Function not implemented.");
-}
