@@ -3,4 +3,5 @@ export type TItem = {
   name: string;
   price: number;
   store: string;
+  createdAt: string;
 };

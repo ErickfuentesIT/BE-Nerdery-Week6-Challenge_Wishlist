@@ -35,6 +35,7 @@ export class WishlistService {
     const item: TItem = {
       id: uuid(),
       ...newItem,
+      createdAt: new Date().toISOString(),
     };
     items.push(item);
     return item;
@@ -130,7 +131,7 @@ export class WishlistService {
 
   static exportToCsv(): string {
     const csvContent = items.reduce((text, item) => {
-      text += `"${item.id}","${item.name}","${item.price}","${item.store}"\n`;
+      text += `"${item.id}","${item.name}","${item.price}","${item.store}","${item.createdAt}"\n`;
       return text;
     }, "id,name,price,store\n");
 

@@ -4,6 +4,7 @@ export const typeDefs = `#graphql
     name: String!
     price: Int!
     store: String!
+    createdAt: String!
   }
 
   type Summary {
