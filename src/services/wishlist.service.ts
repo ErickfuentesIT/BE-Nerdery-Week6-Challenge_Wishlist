@@ -12,7 +12,7 @@ let items: TItem[] = [];
 type TSummary = {
   mostExpensiveItem: TItem;
   averagePriceCents: number;
-  totalCostCents: number;
+  totalCost: number;
   totalItems: number;
 };
 
@@ -28,6 +28,9 @@ type TPaginatedItems = {
   totalCount: number;
   page: number;
   pageSize: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
 };
 
 export class WishlistService {
@@ -35,12 +38,13 @@ export class WishlistService {
     const item: TItem = {
       id: uuid(),
       ...newItem,
-      createdAt: new Date().toISOString(),
+      addedAt: new Date().toISOString(),
     };
     items.push(item);
     return item;
   }
   static getItems(args: TGetItemsArgs): TPaginatedItems {
+    const MAX_PAGE_SIZE = 100;
     let result = [...items];
 
     // 1. Filter by name
@@ -60,12 +64,22 @@ export class WishlistService {
 
     // 3. Pagination
     const page = args.page ?? 1;
-    const pageSize = args.pageSize ?? 10;
+    const requestedPageSize = args.pageSize ?? 10;
+    const pageSize = Math.min(requestedPageSize, MAX_PAGE_SIZE);
     const totalCount = result.length;
     const start = (page - 1) * pageSize;
-    result = result.slice(start, start + pageSize);
+    const totalPages = Math.ceil(totalCount / pageSize); // Calculate total pages
+    const paginatedItems = result.slice(start, start + pageSize);
 
-    return { items: result, totalCount, page, pageSize };
+    return {
+      items: paginatedItems,
+      totalCount,
+      page,
+      pageSize,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPreviousPage: page > 1,
+    };
   }
 
   static getItem(itemId: string): TItem {
@@ -124,29 +138,23 @@ export class WishlistService {
     return {
       mostExpensiveItem,
       averagePriceCents,
-      totalCostCents,
+      totalCost: totalCostCents,
       totalItems,
     };
   }
 
   static exportToCsv(): string {
-    const csvContent = items.reduce((text, item) => {
-      text += `"${item.id}","${item.name}","${item.price}","${item.store}","${item.createdAt}"\n`;
-      return text;
-    }, "id,name,price,store\n");
+    const header = "id,name,price,store,addedAt\n";
 
-    const outputPath = path.resolve(
-      __dirname,
-      "..",
-      "..",
-      "src",
-      "data",
-      `wishlist-${Date.now()}.csv`,
-    );
+    const csvContent = items
+      .map((item) => {
+        const cleanName = item.name.replace(/"/g, '""');
+        const cleanStore = item.store.replace(/"/g, '""');
 
-    fs.writeFileSync(outputPath, csvContent, "utf-8");
+        return `"${item.id}","${cleanName}","${item.price}","${cleanStore}","${item.addedAt}"`;
+      })
+      .join("\n");
 
-    console.log("File written successfully to ", outputPath);
-    return outputPath;
+    return header + csvContent;
   }
 }

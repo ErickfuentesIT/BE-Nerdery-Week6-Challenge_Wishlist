@@ -3,13 +3,11 @@ import { WishlistService } from "../services/wishlist.service";
 
 const router = Router();
 
-router.get("/csvs", async (_req, res) => {
-  try {
-    const filePath = await WishlistService.exportToCsv();
-    res.download(filePath);
-  } catch (error) {
-    res.status(500).json({ error: "Failed to export CSV" });
-  }
+router.get("/export-csv", (req, res) => {
+  const csvData = WishlistService.exportToCsv();
+  res.setHeader("Content-Type", "text/csv");
+  res.setHeader("Content-Disposition", 'attachment; filename="wishlist.csv"');
+  res.status(200).send(csvData);
 });
 
 export default router;

@@ -1,4 +1,4 @@
-import { validate } from "class-validator";
+import { validate, ValidationError } from "class-validator";
 import { plainToInstance } from "class-transformer";
 import { GraphQLError } from "graphql";
 
@@ -7,15 +7,22 @@ export async function validateDto<T extends object>(
   plain: Record<string, unknown>,
 ) {
   const instance = plainToInstance(cls, plain);
-  const errors = await validate(instance);
+  const errors: ValidationError[] = await validate(instance);
 
   if (errors.length > 0) {
-    const first = errors[0];
-    const constraints = first.constraints
-      ? Object.values(first.constraints).join(", ")
-      : "Validation error";
-    throw new GraphQLError(constraints, {
-      extensions: { code: "BAD_USER_INPUT" },
+    const validationErrors = errors.map((error) => ({
+      field: error.property,
+      message: error.constraints
+        ? Object.values(error.constraints).join(", ")
+        : "Invalid value",
+      code: "VALIDATION_FAILED",
+    }));
+
+    throw new GraphQLError("Validation failed", {
+      extensions: {
+        code: "BAD_USER_INPUT",
+        errors: validationErrors,
+      },
     });
   }
 
